@@ -1,39 +1,30 @@
 import React, { useState } from 'react'
-import loginService from '../services/login'
-import blogService from '../services/blogs'
-import Notification from './Notification'
+import { useDispatch } from 'react-redux'
+import { loginUser } from '../reducers/userReducer'
 
-const LoginForm = ({logIn}) => {
+const LoginForm = () => {
 
+  const dispatch = useDispatch()
   const [password, setPassword] = useState('') 
   const [username, setUsername] = useState('')
-  const [errorMessage, setErrorMessage] = useState(null)
 
-  const handleLogin = async event => {
-    event.preventDefault()
-    setErrorMessage(null)
-    try {
-      const user = await loginService.login({
-        username, password,
-      })
-      window.localStorage.setItem(
-        'loggedBloglistAppUser', JSON.stringify(user)
-      ) 
-      blogService.setToken(user.token)
-      logIn(user)
-    } catch (exception) {
-      setErrorMessage('wrong credentials')
-    }
+  const handleLogin = e => {
+    e.preventDefault()
+    dispatch(loginUser({
+      username: username,
+      password: password
+    }))
+    setPassword('')
   }
 
 	return (
 		<div>
 	    <h2>Login</h2>
-	    <Notification message={errorMessage} />
 	    <form onSubmit={handleLogin}>
 		    <div>
 		      username
-		        <input
+	        <input
+            id='LoginUser'
 		        type="text"
 		        value={username}
 		        name="Username"
@@ -43,13 +34,14 @@ const LoginForm = ({logIn}) => {
 		    <div>
 		      password
 		        <input
+            id='LoginPass'
 		        type="password"
 		        value={password}
 		        name="Password"
 		        onChange={({ target }) => setPassword(target.value)}
 		      />
 		    </div>
-		    <button type="submit">login</button>
+		    <button id='LoginButton' type="submit">login</button>
 		  </form>
 		</div>  
 	)    

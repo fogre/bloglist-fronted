@@ -1,90 +1,74 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import {
+  Route, Link, Switch, useRouteMatch
+} from 'react-router-dom'
+import { CssBaseline, Container } from '@material-ui/core';
+//import { ThemeProvider } from '@material-ui/core/styles';
+import { showNotif } from './reducers/notificationReducer'
+import { initializeBlogs, updateBlog } from './reducers/blogReducer'
+import { getCachedUser } from './reducers/userReducer'
 import Blog from './components/Blog'
-import BlogForm from './components/BlogForm'
 import BlogList from './components/BlogList'
-import blogService from './services/blogs'
-import LoginForm from './components/LoginForm'
+//import customTheme from './ui/theme'
 import Notification from './components/Notification'
-import Toggable from './components/Toggable'
+import Menu from './components/Menu'
+
 
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
-  const [user, setUser] = useState(null)
-  const [message, setMessage] = useState(null)
-  const blogFormRef = React.createRef()
-  const loginFormRef = React.createRef()
-
-  useEffect(() => {
-    blogService.getAll().then(blogs =>
-      setBlogs( blogs )
-    )  
-  }, [])
+  const dispatch = useDispatch()
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBloglistAppUser')
     if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON)
-      setUser(user)
-      blogService.setToken(user.token)
-    }
-  }, [])
+      dispatch(getCachedUser(loggedUserJSON))
+    }  
+    dispatch(initializeBlogs())
+  }, [dispatch])
 
-  const addBlog = newBlog => {
-    blogFormRef.current.toggleVisibility()
-    setBlogs(blogs.concat(newBlog))
-  }
+  const blogList = useSelector(state => state.blogs)
+  const user = useSelector(state => state.user)
+  const match = useRouteMatch('/blogs/:id')
+  const blog = match
+    ? blogList.find(b => b.id === match.params.id)
+    : null
 
   const addLike = async blog => {
-    try {
-      const addedBlog = await blogService.update(blog.id, { ...blog, user:user.id, likes: blog.likes+1 })
-      const newBlogs = [...blogs]
-      const index = newBlogs.findIndex(blg => blg.id === addedBlog.id)
-      newBlogs[index] = {...addedBlog, user: user}
-      setBlogs(newBlogs)
-    } catch(excep) {
-      showMessage(excep.message)
-    }   
+    dispatch(
+      updateBlog(
+        blog.id, 
+        { ...blog, user:user.id, likes: blog.likes+1 }
+      )
+    )
+    dispatch(
+      showNotif({ 
+        message:`You liked ${blog.title}`,
+        severity: 'info'
+      })
+    )
   }
 
-  const logInUser = user => {
-    setUser(user)
-  }
-
-  const logOutUser = () => {
-    window.localStorage.removeItem('loggedBloglistAppUser')
-    setUser(null)
-    blogService.setToken(null)
-  }
-
-  const showMessage = msg => {
-    setMessage(msg)
-    setTimeout(() => {
-      setMessage(null)
-    }, 5000)
-  }
-  console.log(blogs)
+  console.log(user)
+  console.log(blogList)
   return (
-    <div>
-      <Notification message={message} />
-      {!user ?
-        <Toggable buttonLabel="Login" ref={loginFormRef}>
-          <LoginForm logIn={logInUser} errorMessage={showMessage} />
-        </Toggable> :
-        <div>
-          <div>
-            {user.name ? user.name : user.username} logged in
-            <button onClick={logOutUser}>logout</button>
-          </div>
-          <Toggable buttonLabel="Add blog" ref={blogFormRef}>
-            <BlogForm serviceFunction={blogService.create} callBack={addBlog}/>
-          </Toggable>
-        </div>
-      }
-      
-      <h2>blogs</h2>
-      <BlogList blogs={blogs} addLike={addLike} />
-    </div>
+    <React.Fragment>
+      {/*<ThemeProvider theme={customTheme}>*/}
+        <CssBaseline />
+        <Container>
+          <Menu user={user} />
+          <Switch>
+            <Route path='/blogs/:id'>
+              <Blog blog={blog} />
+            </Route>  
+            <Route path='/'>
+              <BlogList blogs={blogList} addLike={addLike} />
+            </Route>
+          </Switch>    
+          <Notification />
+        </Container>
+      {/*</ThemeProvider>*/}  
+    </React.Fragment>
   )
 }
 

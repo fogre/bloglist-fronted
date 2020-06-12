@@ -1,29 +1,32 @@
 import axios from 'axios'
+import { getToken } from '../reducers/userReducer'
+
 const baseUrl = '/api/blogs'
 
-let token = null
-
 const create = async newObject => {
-	console.log('creating...')
   const config = {
-    headers: { Authorization: token },
+    headers: { Authorization: getToken() },
   }
-  const response = await axios.post(baseUrl, newObject, config)
-  return response.data
+  const res = await axios.post(baseUrl, newObject, config)
+  return res.data
 }
 
-const getAll = () => {
-  const request = axios.get(baseUrl)
-  return request.then(res => res.data)
+const getAll = async () => {
+  const res = await axios.get(baseUrl)
+  return res.data
 }
 
-const setToken = newToken => {
-  token = `bearer ${newToken}`
+const update = async (id, newObject) => {
+  const res = await axios.put(`${baseUrl}/${id}`, newObject)
+  return res.data
 }
 
-const update = (id, newObject) => {
-  const request = axios.put(`${baseUrl}/${id}`, newObject)
-  return request.then(res => res.data)
+const remove = async id => {
+  const config = {
+    headers: { Authorization: getToken() },
+  }
+  const request = await axios.delete(`${baseUrl}/${id}`, config)
+  return request
 }
 
-export default { getAll, create, update, setToken }
+export default { getAll, create, update, remove }

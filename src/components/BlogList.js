@@ -1,75 +1,99 @@
 import React, { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { makeStyles } from '@material-ui/core/styles'
-import ExpansionPanel from '@material-ui/core/ExpansionPanel'
-import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails'
-import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary'
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
-import ThumbUpAltIcon from '@material-ui/icons/ThumbUpAlt'
-import blogService from '../services/blogs'
-
+import {
+  Card,
+  IconButton,
+  Link,
+  Paper,
+  Typography
+} from '@material-ui/core'
+import LinkIcon from '@material-ui/icons/Link';
+import ThumbUpIcon from '@material-ui/icons/ThumbUp';
+import VisibilityIcon from '@material-ui/icons/Visibility';
+import { deleteBlog } from '../reducers/blogReducer'
+import { showNotif } from '../reducers/notificationReducer'
 
 const BlogList = (props) => {
+	const classes = useStyles()
+  const dispatch = useDispatch()
+  const [openBlog, setOpenBlog] = useState(false);
 
-	const classes = useStyles();
-  const [expanded, setExpanded] = useState(false);
-
-  const handleChange = panel => (event, isExpanded) => {
-    setExpanded(isExpanded ? panel : false);
+  const handleClickOpen = () => {
+    setOpenBlog(true);
   };
 
-  const Blogdetails = ({blog}) => (
-		<ExpansionPanelDetails className={classes.content}>
-	    <a href={blog.url} target='_blank' rel='noopener noreferrer'>{blog.url}</a>
-	    <p>{blog.likes} likes
-	      <IconButton onClick={() => props.addLike(blog)}>
-	        <ThumbUpAltIcon />
-	      </IconButton>
-	    </p>
-	    <p>Added by {blog.user.username}</p>
-		</ExpansionPanelDetails>
-  )
+  const handleClose = () => {
+    setOpenBlog(false);
+  };
+
+  const removeBlog = blog => {
+    dispatch(deleteBlog(blog.id))
+    dispatch(
+      showNotif({
+        message: `${blog.title} deleted`, 
+        severity: 'info'
+      })
+    )
+  }  
+
 	return(
-     <div key={props.blogs} className={classes.root}>
+     <Paper className={classes.root}>
+      <h2>blogs</h2>
       {props.blogs.map(blog => (
-      	<div className={classes.blogContainer} key={blog.id}>
-         <ExpansionPanel expanded={expanded === blog.id} onChange={handleChange(blog.id)} >
-	          <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />} id={blog.id} >
-	            <Typography className={classes.heading}>{blog.title}</Typography>
-	            <Typography className={classes.secondaryHeading}>{blog.author}</Typography>
-        		  <Typography className={classes.likes}>Likes: {blog.likes}</Typography>
-        		</ExpansionPanelSummary>
-        		<Blogdetails blog={blog} classes={classes} />
-      		</ExpansionPanel>
-      	</div>	
+        <Card key={blog.id} className={classes.cardRoot}>
+          <Link href={`/blogs/${blog.id}`} className={classes.cardBlogInfo} color='inherit'>
+            <VisibilityIcon fontSize='small' className={classes.cardTypog} />
+            <Typography className={classes.cardTypog}>
+              {blog.title}
+            </Typography>
+            <Typography variant='body2' color='secondary' className={classes.cardTypog}>
+              {blog.author ? `by ${blog.author}` : null  }
+            </Typography>
+          </Link>
+          <span className={classes.cardLikes}>
+            <button onClick={() => removeBlog(blog)}>delete</button>
+            <IconButton>
+              <Link href={blog.url} target="_blank" rel="noreferrer">
+                <LinkIcon />
+              </Link>  
+            </IconButton>  
+            <Typography className={classes.cardTypog}>
+              {blog.likes}
+            </Typography> 
+            <IconButton onClick={()=> props.addLike(blog)}>
+              <ThumbUpIcon />
+            </IconButton>
+          </span>
+        </Card>
       ))}
-    </div>
+    </Paper>
 	)
 }
 
 const useStyles = makeStyles((theme) => ({
   root: {
+    background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+  },
+  cardRoot: {
+    display: 'flex',
+    marginTop: '1em',
+    marginBottom: '1em',
     width: '100%'
   },
-  blogContainer: {
-  	width: '100%'
+  cardBlogInfo: {
+    display: 'flex',
+    cursor: 'pointer'
   },
-  heading: {
-    fontSize: theme.typography.pxToRem(15),
-    flexBasis: '33.33%',
-    flexShrink: 0,
+  cardTypog: {
+    alignSelf: 'center',
+    marginLeft: '0.5em'
   },
-  secondaryHeading: {
-    fontSize: theme.typography.pxToRem(15),
-    color: theme.palette.text.secondary,
-  },
-  likes: {
-  	fontSize: theme.typography.pxToRem(15),
-  },
-  content: {
-  	display: 'block'
+  cardLikes: {
+    display: 'flex',
+    marginLeft: 'auto',
   }
+
 }));
 
 export default BlogList
